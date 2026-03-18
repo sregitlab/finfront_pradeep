@@ -3,17 +3,38 @@
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
 
+name: frontend-1.0.$(Build.BuildId)
+
 trigger:
-- main
+  branches:
+    include:
+      - main
+  paths:
+    exclude:
+    - '*.yml'
 
 pool:
-  vmImage: ubuntu-latest
+  name: student-lab-pool
+
+variables:
+  - name: artifactName
+    value: 'frontend'
 
 steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
-
 - script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+    echo "Packaging frontend app..."
+    mkdir $(Build.ArtifactStagingDirectory)/package
+    cp -r static $(Build.ArtifactStagingDirectory)/package/
+    cp -r templates $(Build.ArtifactStagingDirectory)/package/
+    cp app.py $(Build.ArtifactStagingDirectory)/package/
+    cp requirements.txt $(Build.ArtifactStagingDirectory)/package/
+  displayName: 'Package Frontend Files'
+
+- task: PublishPipelineArtifact@1
+  inputs:
+    targetPath: '$(Build.ArtifactStagingDirectory)/package'
+    artifact: '$(artifactName)'
+    publishLocation: 'pipeline'
+  displayName: 'Publish Frontend Pipeline Artifact'
+  condition: and(succeeded(), ne(variables['skip_build'], 'true'))
+
